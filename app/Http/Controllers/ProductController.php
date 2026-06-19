@@ -2,56 +2,107 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Product;
+use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    // =========================
     // GET ALL PRODUCTS
+    // =========================
     public function index()
     {
-        return Product::all();
+        return response()->json([
+            'data' => Product::all()
+        ]);
     }
 
-    // CREATE PRODUCT
-public function store(Request $request)
-{
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'price' => 'required|numeric',
-        'stock' => 'required|integer',
-        'image' => 'nullable|string'
-    ]);
-
-    $product = Product::create($validated);
-
-    return response()->json($product, 201);
-}
-
+    // =========================
     // GET SINGLE PRODUCT
-    public function show(string $id)
+    // =========================
+    public function show($id)
     {
-        return Product::findOrFail($id);
-    }
+        $product = Product::find($id);
 
-    // UPDATE PRODUCT
-    public function update(Request $request, string $id)
-    {
-        $product = Product::findOrFail($id);
-
-        $product->update($request->all());
-
-        return response()->json($product);
-    }
-
-    // DELETE PRODUCT
-    public function destroy(string $id)
-    {
-        Product::destroy($id);
+        if (!$product) {
+            return response()->json([
+                'message' => 'Product not found'
+            ], 404);
+        }
 
         return response()->json([
-            'message' => 'Product deleted'
+            'data' => $product
+        ]);
+    }
+
+    // =========================
+    // CREATE PRODUCT
+    // =========================
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name'  => 'required|string|max:255',
+            'price' => 'required|numeric',
+            'stock' => 'required|integer',
+            'image' => 'nullable|string', // ✅ FIXED (optional now)
+        ]);
+
+        $product = Product::create([
+            'name'  => $request->name,
+            'price' => $request->price,
+            'stock' => $request->stock,
+            'image' => $request->image ?? null,
+        ]);
+
+        return response()->json([
+            'message' => 'Product created successfully',
+            'data' => $product
+        ], 201);
+    }
+
+    // =========================
+    // UPDATE PRODUCT
+    // =========================
+    public function update(Request $request, $id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json([
+                'message' => 'Product not found'
+            ], 404);
+        }
+
+        $product->update([
+            'name'  => $request->name ?? $product->name,
+            'price' => $request->price ?? $product->price,
+            'stock' => $request->stock ?? $product->stock,
+            'image' => $request->image ?? $product->image,
+        ]);
+
+        return response()->json([
+            'message' => 'Product updated successfully',
+            'data' => $product
+        ]);
+    }
+
+    // =========================
+    // DELETE PRODUCT
+    // =========================
+    public function destroy($id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json([
+                'message' => 'Product not found'
+            ], 404);
+        }
+
+        $product->delete();
+
+        return response()->json([
+            'message' => 'Product deleted successfully'
         ]);
     }
 }
