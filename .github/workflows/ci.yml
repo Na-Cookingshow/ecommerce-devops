@@ -1,11 +1,11 @@
-name: Ecommerce CI/CD
+name: Laravel CI
 
 on:
   push:
     branches:
       - main
       - develop
-      - feature/product-api
+      - feature/*
 
   pull_request:
     branches:
@@ -16,11 +16,14 @@ jobs:
 
   laravel-test:
 
+    name: Laravel Test
+
     runs-on: ubuntu-latest
+
 
     steps:
 
-    - name: Checkout
+    - name: Checkout code
       uses: actions/checkout@v4
 
 
@@ -28,29 +31,41 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.4'
+        extensions: mbstring, pdo, pdo_mysql
+        coverage: none
 
 
-    - name: Install Laravel Dependencies
-      working-directory: backend
-      run: composer install --no-interaction
+    - name: Copy environment file
+      run: cp .env.example .env
+
+
+    - name: Install Composer dependencies
+      run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+
+    - name: Generate Laravel key
+      run: php artisan key:generate
 
 
     - name: Run Laravel Tests
-      working-directory: backend
       run: php artisan test
 
 
+
   docker-build:
+
+    name: Docker Build Test
 
     runs-on: ubuntu-latest
 
     needs: laravel-test
 
+
     steps:
 
-    - name: Checkout
+    - name: Checkout code
       uses: actions/checkout@v4
 
 
-    - name: Build Docker
-      run: docker compose build
+    - name: Build Docker Image
+      run: docker build -t ecommerce-backend .
